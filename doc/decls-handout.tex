@@ -1,0 +1,55 @@
+%% Declarations of formatting parameters & terminology (HANDOUT VERSION)
+\raggedbottom
+
+%% Page layout
+\oddsidemargin 0pt
+\evensidemargin 0pt
+
+\textheight 600pt
+\textwidth 469pt
+
+\setlength{\parskip}{1ex}
+\setlength{\parindent}{0em}
+
+%%% Tag to indicate references outside of handout %%%%
+%%% Argument should be something like Chapter or Section 
+\newcommand{\csappiii}[1]{CS:APP3e #1}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Environments for handout problems
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% For problems.  Arguments are a name and a category rating
+\newcounter{prob}
+\newenvironment{problem}[2]{%
+\refstepcounter{prob}%
+\begin{center}%
+\begin{minipage}{5.75in}%
+\label{#1}%
+{\bf Problem \arabic{prob}}
+[Category #2]:\par}{\medskip\end{minipage}\end{center}}
+
+
+%% For practice problems.  Arguments are a name and a category rating
+\newenvironment{pproblem}[2]{%
+\refstepcounter{prob}%
+\begin{quote}%
+\label{#1}%
+{\bf Practice Problem \arabic{prob}}:\par\small}{\medskip\end{quote}}
+
+%% For homework problems.  Arguments are a name and a category rating
+\newenvironment{hproblem}[2]{%
+\refstepcounter{prob}%
+\label{#1}%
+{\bf Homework Problem \arabic{prob}}
+\showcat{#2}:\par}{\mbox{}\par}
+
+%% For solutions.  Argument is label given to problem
+\newenvironment{solution}[1]{%
+{\bf Problem \ref{#1} Solution: [Pg.~\pageref{#1}]}\par}{\medskip}
+
+%% Generate Alphabetically-numbered subproblems
+\newenvironment{subproblem}{\begin{enumerate}%
+\def\labelenumi{\Alph{enumi}.}}{\end{enumerate}}
+
+

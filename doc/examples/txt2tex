@@ -1,0 +1,128 @@
+#!/usr/bin/perl 
+#!/usr/local/bin/perl 
+use Getopt::Std;
+
+#################################################################
+# txt2tex - filter that formats raw text for Latex (no tags as with c2tex)
+#
+# Dave O'Hallaron, Carnegie Mellon, 2001
+#
+# Usage: txt2tex [-nh] [-s <startline>] -f <file> -o <out>
+#
+# Options:
+#   -n           add line numbers (default none).
+#   -c           generate colored line nums (linenumcolor)
+#   -h           add hrule with file name (default none).
+#   -s           starting line number (default 1)
+#   -f <file>    input file (required)
+#   -o <out>     root name of output file
+#
+# Scans <infile> and echos each text line
+# Output is written to file ./<out>.tex
+#
+# Other features:
+#   - Places echoed lines in an alltt environment with right and left
+#     braces and backslashed strings such as "\n"  properly escaped. 
+
+#################################################################
+
+# parse the command line arguments
+getopts('cnhs:f:o:');
+if (!$opt_f || !$opt_o) {
+    printf STDERR "Usage: $0 [-nh] [-s <startline>] -f <filename> -o <out>\n";
+    printf STDERR "Options:\n";
+    printf STDERR "  -n        add line numbers (default none).\n";
+    printf STDERR "  -c        generate colored line nums (linenumcolor).\n";
+    printf STDERR "  -h        add hrule with file name (default none).\n";
+    printf STDERR "  -s        starting line number (default 1).\n";
+    printf STDERR "  -f <file> input file (required).\n";
+    printf STDERR "  -o <tag>  root name of output file (required).\n";
+    die "\n";
+}
+
+# take care of the command line arguments
+$infile = $opt_f;
+$out = $opt_o;
+$texfile = $out.".tex";
+
+if (!$opt_s) {
+    $linenum = 1;       # the first line number is unity by default
+} else {
+    $linenum = $opt_s;  # otherwise use the line number passed in by the user.
+}
+
+# make sure the input file is readable
+open(INFILE, $infile) || die "$0: ERROR: couldn't open ", $infile, "\n";
+close(INFILE);
+
+# detabify the input file
+$tmpfilename = "/tmp/"."c2tex".$$;
+system("expand < $infile > $tmpfilename");
+
+# open the detabified temporary file
+open(INFILE, $tmpfilename) || die "$0: ERROR: couldn't open $tmpfilename\n";
+
+# open the output tex file
+open(OUTFILE, ">$texfile") || die "$0: ERROR: couldn't open $texfile\n";
+
+# Convert any _ in filename to \_ to keep latex happy
+$latexfilename = $infile;
+$latexfilename =~ s/_/\\_/g;  
+
+# Strip off any preceeding "../"
+$latexfilename =~ s/^\.\.\///;
+
+# If -h on command line, begin code with a horizontal line with the 
+# source filename right justified
+if ($opt_h) {
+    print OUTFILE "\\hrulefill {\\em \\, $latexfilename}\n";
+}
+
+# main loop - extract and format
+print OUTFILE "\\begin{alltt}\n";
+# Begin TEMP
+# Insert metadata
+# print OUTFILE "FILE:$opt_f\n";
+# End TEMP
+while (<INFILE>) {
+    $line = $_;
+    chomp $line;
+    ($line,$label) = split "//", $line;
+    $line =~ s/\s+$//;
+    $label =~ s/\s+//g;
+
+    $line =~ s/{/\\verb:\{:/g;     # { becomes \{
+    $line =~ s/}/\\verb:\}:/g;     # } becomes \}
+    $line =~ s/\\r/\\verb:\\r:/g;  # \r becomes \verb:\r:
+    $line =~ s/\\n/\\verb:\\n:/g;  # \n becomes \verb:\n:
+    $line =~ s/\\t/\\verb:\\t:/g;  # \t becomes \verb:\t:
+    $line =~ s/\\0/\\verb:\\0:/g;  # \0 becomes \verb:\0:
+
+    $savelinenum = $linenum;
+    # if -n on command line, emit a line number.
+    if ($opt_n) {
+	if ($opt_c) { # if -c emit a colored line number
+	    printf OUTFILE 
+		"{\\scriptsize \\textcolor{linenumcolor}{%3d}} ", 
+		$linenum++;		
+	}
+	else {
+	    printf OUTFILE "{\\scriptsize %3d} ", $linenum++;
+	}
+    }
+    printf OUTFILE "%s\n", $line;
+    if ($label) {
+	printf OUTFILE "\\setcounter{codelineno}{%d}\\refstepcounter{codelineno}\\label{$label}", $savelinenum-1;
+    }
+}
+print OUTFILE "\\end{alltt}\n";
+
+# If -h on command line, end the code with a matching horizontal line
+if ($opt_h) {
+    print OUTFILE "\\hrulefill {\\em \\, $latexfilename}\n";
+}
+
+
+# clean up and do some error checking 
+system("rm -f $tmpfilename"); 
+exit;

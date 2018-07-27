@@ -1,0 +1,258 @@
+%% Generic environments and commands that we use in the CS:APP book
+
+%%%%%%%%%% 
+% Commands
+%%%%%%%%%% 
+
+% Reference to versions of book
+\newcommand{\csapp}{CS:APP}
+\newcommand{\csappii}{CS:APP2e}
+
+% Reference to something in book from a web aside
+\newcommand{\bookref}[1]{CS:APP3e-\ref{#1}}
+% Reference to a named web aside
+\newcommand{\wasideref}[1]{\textsc{#1}}
+
+% For drawing different kinds of circles in the course table in the preface
+% fcirc: filled circle, % ecirc: empty circle
+\newcommand{\fcirc}{\begin{picture}(1,1)\put(1,1){\circle*{5}}\end{picture}}
+\newcommand{\ecirc}{\begin{picture}(1,1)\put(1,1){\circle{5}}\put(1,1){\circle*{2.4}}\end{picture}}
+
+% For putting labels on pictures
+\newcommand{\clabel}[1]{\makebox(0,0){#1}}
+\newcommand{\rlabel}[1]{\makebox(0,0)[r]{#1}}
+\newcommand{\llabel}[1]{\makebox(0,0)[l]{#1}}
+\newcommand{\blabel}[1]{\makebox(0,0)[b]{#1}}
+\newcommand{\lblabel}[1]{\makebox(0,0)[lb]{#1}}
+\newcommand{\tlabel}[1]{\makebox(0,0)[t]{#1}}
+
+%% Comment command
+\newcommand{\comment}[1]{}
+
+%% Two part captions.  First part is title.  Second is explanation.
+\newcommand{\mycaption}[2]{\caption[#1]{\small \textsf{\textbf{#1} #2}}}
+
+%% For showing categories of homework problems
+\definecolor{catcolor}{rgb}{0,0,1}
+\newcommand{\catmark}{{\color{catcolor}\blacklozenge}}
+\newcommand{\catone}{$\catmark$}
+\newcommand{\cattwo}{$\catmark\,\catmark$}
+\newcommand{\catthree}{$\catmark\,\catmark\,\catmark$}
+\newcommand{\catfour}{$\catmark\,\catmark\,\catmark\,\catmark$}
+\newcommand{\showcat}[1]{\ifthenelse{#1=1}{\catone}{%
+ \ifthenelse{#1=2}{\cattwo}{%
+   \ifthenelse{#1=3}{\catthree}{\catfour}}}}
+
+
+% Linker ref->def notation
+\newcommand{\refdef}[2]{$\texttt{REF(#1)} \rightarrow \texttt{DEF(#2)}$}
+
+% Linker ref->def question
+\newcommand{\refdefq}[1]{$\texttt{REF(#1)} \rightarrow \texttt{DEF(\_\_\_\_\_\_\_\_\_\_.\_\_\_\_)}$}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+% Environments and macros for different elements of the book
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+
+%% This TeX counter is used to generate references to 
+%% different code line numbers
+\newcounter{codelineno}
+
+%% This defines the color we are using for all the code line numbers
+\definecolor{linenumcolor}{rgb}{0,0,1} 
+
+%% Various Unix command-line prompts
+\newcommand{\unixprompt}{linux>}
+\newcommand{\linuxprompt}{linux>}
+\newcommand{\solarisprompt}{solaris>}
+
+%% Definition of RIO, SIO  package names
+\newcommand{\rio}{\textsc{Rio}}
+\newcommand{\sio}{\textsc{Sio}}
+\newcommand{\Tiny}{\textsc{Tiny}}
+
+%%%
+%%% Environments
+%%%
+
+%% pcode- Generating pseudo-code
+\newenvironment{pcode}{\mbox{}\newline\vspace{.5ex}\newline\begin{minipage}{6in}\begin{tt}\begin{tabbing}MMM\=MMM\=MMM\=MMM\=MMM\=MMM\=MMM\=MMM\=MMM\=\+\kill}{\end{tabbing}\end{tt}\end{minipage}\newline\vspace{.5ex}\newline}
+
+%% Showing syntactic elements in pseudo-code
+\newcommand{\syntax}[1]{{\rm\it #1}}
+
+%% aside - for displaying sidebars 
+\newenvironment{aside}[1]%
+{\begin{quote}\footnotesize{\textbf{Aside: #1}}\\}
+{\textbf{End Aside.}\end{quote}}
+
+%% waside - for highlighting content available on the WEE
+%% Arg1: Code.  Arg2: Title
+\newenvironment{waside}[2]%
+{\begin{quote}\footnotesize{\textbf{Web Aside \textsc{#1}: #2}}\\}
+{\textbf{End Aside.}\end{quote}}
+
+%% ntc - New to C element
+\newenvironment{ntc}[1]%
+{\begin{quote}\footnotesize{\textbf{New to C?: #1}}\\}
+{\textbf{End.}\end{quote}}
+
+%% principle - to highlight key concept
+\newenvironment{principle}[1]%
+{\begin{quote}\textbf{Principle}: {\em #1} \hrulefill \mbox{} \vskip 1pt}%
+{\vskip 1pt \hrulefill \mbox{} \end{quote}}
+
+%% derivation - to present derivation
+\newenvironment{derivation}[1]%
+{\begin{quote}\textbf{Derivation}: {\em #1} \hrulefill \mbox{} \vskip 1pt}%
+{\vskip 1pt \hrulefill \mbox{} \end{quote}}
+
+%% ccode- for displaying formatted C code (c2tex) 
+\newenvironment{ccode}%
+{\small}%
+{}
+
+%% scode - for displaying formatted ASM code (s2tex and d2tex)
+\newenvironment{scode}%
+{\small}
+{}
+
+%% codefrag - for displaying unformatted code fragments
+\newenvironment{codefrag}%
+{\small\begin{alltt}}%
+{\end{alltt}%
+}
+
+%% tty - for displaying TTY input and output
+\newenvironment{tty}%
+{\small\begin{alltt}}%
+{\end{alltt}}
+
+
+%% Environment for descriptions that provide aligned text
+\newenvironment{mydesc}[1]{
+\setbox1=\hbox{#1}
+\begin{list}{}{
+\setlength{\labelwidth}{\wd1}
+\setlength{\leftmargin}{\wd1}
+  \addtolength{\leftmargin}{1em}
+  \addtolength{\leftmargin}{\labelsep}
+\setlength{\rightmargin}{1em}}}{\end{list}}
+
+\newcommand{\litem}[1]{\item[#1\hfill]}
+\newcommand{\ritem}[1]{\item[#1]}
+
+%% For marking different verions of problems
+
+\newcommand{\sameprob}[1]{\textbf{Same as Version A Problem \ref{#1}}\\ \mbox{}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Indexing 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Distinguish multiple types of index entries
+%%   - IA32 instructions (iindex, diindex)
+%%   - x86-64 instructions (xindex, dxindex)
+%%   - Y86  instructions (yindex, dyindex)
+%%   - HCL  things (hindex, dhindex)
+%%   - Program names (pindex, dpindex)
+%%   - C things (cindex, dcindex)
+%%   - Stdlib functions (sindex, dsindex)
+%%   - Unix functions (uindex, duindex)
+%%   - CSAPP functions (csindex, dcsindex)
+%%   - CSAPP programs (pcsindex, dpcsindex)
+%%   - Library files, such as <limits.h> (lindex, dlindex) 
+%%   - Everything else. (index, dindex)
+%% In every case, the `d' version is used for the defining index entry
+
+%% Generic instructions.
+%% Takes two arguments:
+%% The name of the instruction
+%% An English rendition of the mnemonic
+\newcommand{\gindex}[2]{\index{#1@\textsc{#1} [Instruction class] #2}}
+\newcommand{\dgindex}[2]{\index{#1@\textsc{#1} [Instruction class] #2|emph}}
+
+
+%% IA32 instructions.
+%% Takes two arguments:
+%% The name of the instruction
+%% An English rendition of the mnemonic
+\newcommand{\iindex}[2]{\index{#1@\texttt{#1} [IA32] #2}}
+\newcommand{\diindex}[2]{\index{#1@\texttt{#1} [IA32] #2|emph}}
+
+%% x86-64 instructions.
+%% Takes two arguments:
+%% The name of the instruction
+%% An English rendition of the mnemonic
+\newcommand{\xindex}[2]{\index{#1@\texttt{#1} [x86-64] #2}}
+\newcommand{\dxindex}[2]{\index{#1@\texttt{#1} [x86-64] #2|emph}}
+
+%% y86-64 instructions.
+%% Takes two arguments:
+%% The name of the instruction
+%% An English rendition of the mnemonic
+\newcommand{\yindex}[2]{\index{#1@\texttt{#1} [Y86-64] #2}}
+\newcommand{\dyindex}[2]{\index{#1@\texttt{#1} [Y86-64] #2|emph}}
+
+%% HCL things
+%% Takes two arguments:
+%% The name of the instruction
+%% An English rendition of the mnemonic
+\newcommand{\hindex}[2]{\index{#1@\texttt{#1} [HCL] #2}}
+\newcommand{\dhindex}[2]{\index{#1@\texttt{#1} [HCL] #2|emph}}
+
+%% Program names (e.g., gcc, gdb.  Write in lower case)
+%% Takes two arguments:
+%% The name of the program
+%% An English description
+\newcommand{\pindex}[2]{\index{#1@{\sc #1} #2}}
+\newcommand{\dpindex}[2]{\index{#1@{\sc #1} #2|emph}}
+
+%% C things (operators, statements, etc)
+%% Takes two arguments:
+%% C name
+%% An English description
+\newcommand{\cindex}[2]{\index{#1@\texttt{#1} [C] #2}}
+\newcommand{\dcindex}[2]{\index{#1@\texttt{#1} [C] #2|emph}}
+
+%% Stdlib functions
+%% Takes two arguments:
+%% function name
+%% An English description
+\newcommand{\sindex}[2]{\index{#1@\texttt{#1} [C Stdlib] #2}}
+\newcommand{\dsindex}[2]{\index{#1@\texttt{#1} [C Stdlib] #2|emph}}
+
+%% Unix functions
+%% Takes two arguments:
+%% function name
+%% An English description
+\newcommand{\uindex}[2]{\index{#1@\texttt{#1} [Unix] #2}}
+\newcommand{\duindex}[2]{\index{#1@\texttt{#1} [Unix] #2|emph}}
+
+%% CSAPP functions
+%% Takes two arguments:
+%% function name
+%% An English description
+\newcommand{\csindex}[2]{\index{#1@\texttt{#1} [CS:APP] #2}}
+\newcommand{\dcsindex}[2]{\index{#1@\texttt{#1} [CS:APP] #2|emph}}
+
+%% CSAPP programs
+%% Takes two arguments:
+%% function name
+%% An English description
+\newcommand{\pcsindex}[2]{\index{#1@{\sc #1} [CS:APP] #2}}
+\newcommand{\dpcsindex}[2]{\index{#1@{\sc #1} [CS:APP] #2|emph}}
+
+%% Library file names (e.g., <limits.h>)
+%% Takes two arguments:
+%% The name of the file (without brackets)
+%% An English description
+\newcommand{\lindex}[2]{\index{#1@\texttt{<#1>} #2}}
+\newcommand{\dlindex}[2]{\index{#1@\texttt{<#1>} #2|emph}}
+
+%% Normal index entry.
+%% Takes one argument
+%% \index already defined
+\newcommand{\dindex}[1]{\index{#1|emph}}
+
+
+

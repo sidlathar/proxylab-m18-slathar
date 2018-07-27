@@ -1,0 +1,579 @@
+\documentclass[11pt]{article}
+
+\pagestyle{myheadings}
+
+\usepackage{times}
+\usepackage{color}
+\usepackage{alltt}
+\usepackage{graphicx}
+
+\input{decls-handout}
+\input{decls-common}
+
+\newcommand{\pxydrive}{\textsc{PxyDrive}}
+\newcommand{\pxyregress}{\textsc{PxyRegress}}
+
+\begin{document}
+
+
+\title{
+\includegraphics[width=4in]{figs/pixie-driver} \\[2ex]
+\pxydrive: A Proxy Testing Framework\thanks{Copyright \copyright{} 2018, R. E. Bryant.  All rights reserved.}
+}
+
+\author{Randal E. Bryant \\ Carnegie Mellon University}
+
+\maketitle
+
+\section{Overview}
+\label{sec:overview}
+
+\begin{figure}
+\begin{center}
+\includegraphics[scale=0.6]{figs/structure}
+\end{center}
+\mycaption{Structure of \pxydrive}{The program acts as both the client and the servers for a proxy program.}
+\label{fig:structure}
+\end{figure}
+
+\pxydrive{} (pronounced ``pixie drive'') provides a comprehensive
+testing environment for web proxy programs.  It enables testing and
+debugging of the basic operations of a proxy, as well as the ability
+to support concurrent requests and to provide caching of retrieved
+files.  An associated program \pxyregress{} runs a series of standard
+tests, using \pxydrive{} to perform each test.  These two programs are
+designed to help students implement their proxies and to help graders
+perform automated testing.  \pxydrive{} was developed to support the
+ProxyLab assignment, but it can be used on other proxies, as well.
+
+\newpage
+
+Figure \ref{fig:structure} illustrates the overall structure of
+\pxydrive{}.  As shown, it includes a number of components:
+\begin{itemize}
+\item An external executable {\em proxy} program.  It is executed as child
+  process of \pxydrive.
+\item A web {\em client} that can issue requests for files and then compare
+  the responses to original copies of the files.
+\item One or more {\em servers} that can respond to requests for files
+\item A set of {\em files} shared by the client and the servers
+\item A {\em console} providing a simple command-line interpreter to
+  perform tests and to observe results.
+\end{itemize}
+
+This structure provides a number useful features for testing a proxy
+program:
+\begin{itemize}
+\item By including all of these components in a single program, \pxydrive{}
+has very detailed control over the sequencing of interactions with the
+proxy.
+\item By having files shared between the client and the servers, the
+  client can check that the results it receives match those sent by
+  the servers.
+\item By observing a transaction from both the client's and the
+  server's side, it can provide useful information to the user about
+  all of the communications that take place.
+\item The ability to observe both server and client communications
+  enables \pxydrive{} to check that the proxy complies with any
+  formatting requirements for HTTP messages.
+\end{itemize}
+
+\section{Running \pxydrive}
+\label{sec:running}
+
+\pxydrive{} is written in Python, and so is invoked as
+\texttt{./pxydrive.py} from its local directory.  (You can also run it
+from another directory by giving an appropriate path.)  \pxydrive{}
+has been tested on both Linux and Mac~OS~X.  Its ability to run on
+other platforms is unknown.
+
+\subsection*{Command-Line Arguments}
+
+\pxydrive{} supports the following command-line
+arguments:
+\begin{description}
+\item[\texttt{-h}]  $\;$ \\
+Print usage information
+\item[\texttt{-p} {\it PROXY}] $\;$ \\
+Run specified proxy program.  For
+  more details, consult the documentation of the \texttt{proxy}
+  command.
+\item[\texttt{-f} {\it FILE}]  $\;$ \\
+Read commands from {\it FILE}\@.
+For more details, consult the documentation of the
+  \texttt{source} command.
+\item[\texttt{-l} {\it FILE}]  $\;$ \\
+Write inputs and outputs to {\it FILE}\@.
+For more details, consult the documentation of the
+  \texttt{log} command.
+\item[\texttt{-S}] $\;$ \\
+Enforce strict formatting rules for HTTP request message headers. 
+For more details, consult the documentation of the \texttt{strict} option.
+\end{description}
+
+\pxydrive{} creates two subdirectories of the directory in which it is
+invoked:
+\verb@source_files@, in which generated files are stored, and \verb@response_files@,
+  in which files received by the client are stored.  These files can
+  be examined when some transaction generates an error.
+  Old versions of
+  these files are deleted every time \pxydrive{} starts.
+
+Once started, the user directs \pxydrive{} to perform a series of
+tests, either by typing commands directly to the program or by reading
+the commands from a file.
+
+\subsection*{Proxy Requirements}
+
+\pxydrive{} is designed to tests proxy programs that meet the
+requirements specified in ProxyLab.  The lab description specifies several important aspects of the request headers sent by the proxy to a server:
+\begin{itemize}
+\item There must be a \texttt{Host} header
+\item There must be \texttt{User-Agent}, \texttt{Connection} and \texttt{Proxy-Connection} headers with specific values.
+\item Any other request headers that are sent by the client should be forwarded unchanged.
+\end{itemize}
+The latter requirement is especially important, because \pxydrive{} uses information passed in headers
+ to track the interactions between clients and servers.
+
+\pxydrive{} can operate in two different modes.  In {\em strict} mode
+(set with either the command-line argument \texttt{-S} or the \texttt{strict} option), these
+requirements are strictly enforced.  Error messages will be printed for request messages that do not comply.
+In {\em non-strict} mode (the
+default), the program doesn't require these headers.  Instead, it does
+its best to track the interactions heuristically.  Even in non-strict
+mode, it works best when the proxy
+forwards information placed in the request headers to the server.
+
+\section{\pxydrive{} Operation}
+\label{sec:operation}
+
+
+\begin{figure}
+\begin{center}
+\includegraphics[scale=0.6]{figs/transaction}
+\end{center}
+\mycaption{Steps in a transaction}{A transaction involves a {\em request} (steps 1--3) and a {\em response} (steps 4--6)}
+\label{fig:transaction}
+\end{figure}
+
+
+A {\em transaction} by \pxydrive{} consists of all of the steps required for the
+client to get a file from a server via the proxy and ascertain its correctness.  A transaction
+has two different phases: the {\em request} by the client,
+followed by the {\em response} by the server.  Each transaction can be
+divided into six steps---three for each phase, as is illustrated in
+Figure \ref{fig:transaction}:
+\begin{description}
+\item[Request] $\;$ \\
+\begin{enumerate}
+\item The client sends a \texttt{GET} request to the proxy.  This
+  request includes a URL, identifying the host server and the file name.
+\item The proxy forwards the request to the designated server.
+\item The server receives the request, locates the file, and
+  formulates a response message.
+\end{enumerate}
+\item[Response] $\;$ \\
+\begin{enumerate}
+\setcounter{enumi}{3}
+\item The server sends the response message to the proxy.
+\item The proxy forwards the response to the client.
+\item The client receives the requested file and compares it to the
+  original one.
+\end{enumerate}
+\end{description}
+
+\begin{figure}
+\begin{center}
+\input{examples/A01}
+\end{center}
+\mycaption{Using \pxydrive{} to perform transaction with separate request and response.}{Delays must be included to allow the proxy, the server, and the network to operate.}
+\label{cmd:A01}
+\end{figure}
+
+\pxydrive{} gives fine-grained control over transactions, providing
+separate commands to trigger the request phase and the response
+phase.  This feature makes it possible to test important features of
+the proxy, including its ability to handle concurrent transactions and
+to cache previously retrieved files.
+
+The following simple examples illustrate how the user can control
+\pxydrive{} operation.  These examples all consist of commands that
+can be supplied to the command-line interface.  Observe that
+`\verb@#@' is a comment character---it and anything to the right on
+the same line are ignored.
+
+Figure \ref{cmd:A01} shows a session having a single transaction, with
+separate commands to trigger the request and the response.  (For this
+session, the proxy was specified as a command-line option.)
+The lines are as follows:
+\begin{enumerate}
+\item A server is set up and given name \texttt{s1}.  (It is possible
+  to have multiple servers, each with a unique name.)
+\item A file, consisting of 10,000 random ASCII characters is
+  generated.  (The extension \texttt{.txt} indicates that the file
+  should contain only ASCII characters.)  
+The suffix `\texttt{K}' indicates that the
+  number of bytes should be multplied by 1,000.
+\item The client makes a request for this file from the server.  The transaction is
+  given the identifier `\texttt{r1}.'  Transaction identifiers must be
+  unique, because they provide the mechanism by which \pxydrive{}
+  tracks the progress of transactions.
+\item The program waits for 100 milliseconds, giving time for steps
+  1--3 of the transaction to occur.  Explicit delays must be included
+  whenever the client, proxy, or server must complete some operations
+  before the next command can be performed.
+\item The server is instructed to respond to the request.  Note the
+  use of the transaction identifier to indicate the specific request.
+\item The program waits for 100 milliseconds, giving time for steps
+  4--6 of the transaction to occur.
+\item
+The program checks that the file was received correctly by the
+client.  An error message will be printed if either the server could
+not find the file, the file was corrupted, or the client did not
+receive the reponse.
+\end{enumerate}
+
+\begin{figure}
+\begin{center}
+\input{examples/A02}
+\end{center}
+\mycaption{Using \pxydrive{} to perform transaction with immediate response.}{Only one delay is required.}
+\label{cmd:A02}
+\end{figure}
+
+Figure \ref{cmd:A02} also performs a single transaction, but it
+illustrates several additional features of \pxydrive{}.  In line 2,
+the generated file is given the extension \texttt{.bin}.  This causes
+the generated file to contain arbitrary bytes.  Such a file will test
+the ability of the proxy to properly handle binary data.  In addition
+the \texttt{fetch} command of line 3 indicates that \pxydrive{} should
+perform a complete transaction, with the server responding immediately
+to the request.  Only one delay command (line 4) is required, since all six
+steps of the transaction will take place.
+Running a session consisting of a mix of fetches and
+requests requires the proxy to handle a variety of event timings.
+
+
+\begin{figure}
+\begin{center}
+\input{examples/A03}
+\end{center}
+\mycaption{Using \pxydrive{} to perform transaction with missing file.}{The check confirms status code 404.}
+\label{cmd:A03}
+\end{figure}
+
+Figure \ref{cmd:A03} illustrates how \pxydrive{} can be used to test
+the ability of the proxy to handle transactions involving exceptional
+conditions.  It shows an attempt to retrieve a file that does not
+exist.  The server will respond to this request with a message having
+status code 404, indicating that the file was not found.  The proxy
+should forward this message to the client.  The optional argument
+\texttt{404} on line 4 indicates that the program should check for
+this status code in the response to the client.
+
+These three examples illustrate some of the capabilities of
+\pxydrive{} to run tests of a proxy.  Section \ref{sec:testing} provides additional examples
+showing how to test different features of a proxy.
+
+\section{Commands}
+\label{sec:command}
+
+The following documents all of the commands supported by \pxydrive{}.
+These are divided into different categories, according to when and how
+they get used.
+
+In the following, square brackets enclose optional arguments, while
+the notation \textit{ARG}$+$ means one or more repetitions of argument \textit{ARG}\@.
+The notation (\textit{ARGA}$|$\textit{ARGB}) indicates a choice
+between arguments \textit{ARGA} and \textit{ARGB}\@.
+
+\subsection*{Set Up}
+
+The following commands are used at the beginning of a session to
+establish the environment for a set of transactions.
+
+\begin{description}
+\item[\texttt{proxy} {\it PATH} [\textit{ARG}$+$]] $\;$ \\
+    Execute proxy program stored as executable file {\it PATH}\@.
+    Any remaining arguments are passed to the proxy as command-line
+    arguments.  (There is no need to pass a port number---this is
+    supplied by \pxydrive{}.)
+    Any results printed by the proxy to either standard
+    output or standard error will be echoed to the \pxydrive{}
+    standard output
+    and log files.  If some proxy is already running, it will be
+    terminated before starting the specified proxy.
+
+\item[\texttt{serve} \textit{SID}$+$] $\;$ \\
+    Set up server(s) with named identifier(s).  These will be assigned
+    ports chosen by \pxydrive{}.  Server identifiers must be unique.
+
+\item[\texttt{generate} \textit{NAME}\texttt{.}(\texttt{txt}$|$\texttt{bin}) \textit{BYTES}] $\;$ \\
+    Generate file with random content.  
+    Files with names of the form \textit{NAME}\texttt{.txt} will
+    contain random ASCII characters, formatted into lines of length
+    80.
+    Files with names of the form \textit{NAME}\texttt{.bin} will
+    contain random, unformatted bytes.
+    Argument \textit{BYTES} indicates the number of bytes in the
+    file.  As a shortcut, suffix `\texttt{K}' multiplies the number of
+    bytes by 1,000, and suffix `\texttt{M}' multiplies the number of
+    bytes by 1,000,000.
+\end{description}
+
+\subsection*{Transactions}
+
+The following commands control the progress of transactions and
+observe their results.
+
+\begin{description}
+\item[\texttt{fetch} \textit{ID} \textit{FILE} \textit{SID}]  $\;$ \\
+    Fetch file from server (i.e., the request will be passed to
+    server, and the server will be allowed to respond immediately.)
+    \textit{ID} is an identifying name for the transaction.  It must
+    be unique.  Unless testing for a ``not found'' response, \textit{FILE} should be one of the files accessible to
+    the server (e.g., one generated with the \texttt{generate} command).
+    \textit{SID} identifies which server to use.
+
+\item[\texttt{request} \textit{ID} \textit{FILE} \textit{SID}]  $\;$ \\
+    Request file from server (i.e., the request will be passed to
+    server, but the server will be not be allowed to respond.)
+    \textit{ID} is an identifying name for the transaction.  It must
+    be unique.  Unless testing for a ``not found'' response, \textit{FILE} should be one of the files accessible to
+    the server (e.g., one generated with the \texttt{generate} command).
+    \textit{SID} identifies which server to use.
+
+\item[\texttt{respond} \textit{ID}$+$]  $\;$ \\
+    Allow the server(s) to respond to request(s) specified by the
+    identifier(s).  An error message will be printed if the server has
+    not yet received this request.
+
+\item[\texttt{check} \textit{ID} [\textit{CODE}]]  $\;$ \\
+    Check that transaction \textit{ID} generated the proper status
+    code.  The default code is 200, indicating that the file was
+    successfully retrieved.    Additional status
+codes include 400 (bad request), 404 (not
+found), 501 (not implemented), and 505 (unsupported HTTP version), as
+are documented in Figure 11.25 of CS:APP\@.
+
+\item[\texttt{trace} \textit{ID}$+$]  $\;$ \\
+    Trace the histories of the specified transactions.
+    This will print information about the six transaction steps illustrated in
+    Figure \ref{fig:transaction}, including copies of the HTTP
+    headers. This command can be very useful when debugging a proxy or
+    a test sequence.
+\end{description}
+
+\subsection*{Runtime Control}
+
+The following commands control the operation of the program.
+
+\begin{description}
+\item[\texttt{delay} \textit{MS}]  $\;$ \\
+    Delay for \textit{MS} milliseconds.
+
+\item[\texttt{log} \textit{FILE}]  $\;$ \\
+    Copy outputs to \textit{FILE}\@.  Inputs are also echoed to the file
+    if the \texttt{echo} option is set. (This is the default.)
+
+\item[\texttt{source} \textit{FILE}]  $\;$ \\
+    Read commands from \textit{FILE}\@.
+
+\item[\texttt{option} \textit{OPTION} \textit{VALUE}]  $\;$ \\
+    Set a runtime option.  Supported options are documented below.
+
+\item[\texttt{delete} \textit{FILE}]  $\;$ \\
+    Delete file \textit{FILE}\@.  Files generated during previous runs
+    of \pxydrive{} are automatically deleted every time the program
+    starts, and so explicit deletion of files is only required for
+    running special tests, or to avoid leaving large files around
+    after a test has completed.
+
+\item[\texttt{help}] $\;$ \\
+Print a summary of the commands and options.
+
+\item[\texttt{quit}]  $\;$ \\
+Exit the program.  This may take awhile, since multiple threads must
+be terminated.  If the program hangs up indefinitely or causes an
+unexpected exception, it may be necessary to explicitly kill the
+\pxydrive{} process.
+\end{description}
+
+\subsection*{Options}
+
+The following options are supported.  For Boolean options, 1
+indicates true, and 0 indicates false.
+\begin{description}
+\item[autotrace] (Boolean, default = 0)\\
+ Trace every request for which a check fails.
+This mode is helpful for debugging,
+because it causes detailed information about each failed check to be
+printed.
+\item[echo] (Boolean, default = 1)\\
+Echo inputs to log files.  This makes it possible to keep track of which commands were being executed.
+\item[error] (Integer, default = 5)\\
+The maximum number of errors that can occur before the program aborts.
+\item[stretch] (Integer, default = 100):\\
+Adjusts the length of each
+  delay.  Given a command ``\textbf{delay} $d$,'' and given a stretch
+  value of $s$, the actual delay will be $d \cdot s/100$ milliseconds.
+  Setting the stretch to a value greater than 100 lengthens all
+  delays, while setting it to a value less than 100 shortens them.
+  This provides a way to adjust all of the delays in a test sequence
+  without editting all of the delay commands in a file.  It can be
+  useful in detecting cases where tests are just on a border between
+  success and failure due to event timings.
+\item[strict] (Boolean, default = 0):\\ Apply strict formatting rules
+  to HTTP request headers.  As described in the ProxyLab writeup,
+  request messages are required to include headers with settings for
+  \texttt{Host}, \texttt{Connection}, and \texttt{Proxy-Connection}.
+  In addition, the proxy should pass along any other headers defined
+  in the request message from the client.
+\end{description}
+
+\section{Testing Proxy Capabilities}
+\label{sec:testing}
+
+The following are some examples demonstrating how the fine-grained
+control provided by \pxydrive{} allows testing of different features
+of a proxy.  Additional examples can be found in the standard tests
+described in Section \ref{sec:standard}.
+
+\begin{figure}
+\begin{center}
+\input{examples/B01}
+\end{center}
+\mycaption{Using \pxydrive{} to perform transaction requiring concurrent proxy.}{A serial proxy would be held up waiting for the server to respond to request \texttt{r1}.}
+\label{cmd:B01}
+\end{figure}
+
+Figure \ref{cmd:B01} illustrates the ability of \pxydrive{} to
+ascertain that a proxy supports concurrent transactions.  In this
+test, two requests---\texttt{r1} and \texttt{r2}---are made (lines 4--5), but the
+server only responds to \texttt{r2} (line 7).  A sequential proxy will hang up
+waiting for the response for \texttt{r1}, never forwarding \texttt{r2}
+to the server.  The check on line 9 will therefore fail, because
+transaction \texttt{r2} does not complete.  A concurrent proxy can
+handle multiple transactions simultaneously, and so it will forward
+\texttt{r2} to the server and send the response back to the client, even while waiting for the server to
+respond to \texttt{r1}
+
+\begin{figure}
+\begin{center}
+\input{examples/C01}
+\end{center}
+\mycaption{Using \pxydrive{} to perform transaction requiring caching.}{A caching proxy will respond to \texttt{r1} without any action by the server.}
+\label{cmd:C01}
+\end{figure}
+
+Figure \ref{cmd:C01} illustrates the ability of \pxydrive{} to
+ascertain that the proxy caches previous results.  It first performs
+transaction \texttt{f1}, retrieving file \texttt{random-text.txt}.  It
+then issues a request for the same file (transaction \texttt{r1}).  If
+the proxy has the file it its cache, it will shortcircuit the
+transaction and return the file directly to the client, skipping steps
+2--4 of Figure \ref{fig:transaction}.  The server never receives the
+request and therefore need not be instructed to respond to it.
+
+
+\section{Standard Tests}
+\label{sec:standard}
+
+The directory \texttt{tests} contains a set of 32 command files
+testing many aspects of a proxy.  These are divided into three {\em
+  series}, named ``A'',
+``B'', and ``C'' based on the first letter of their file names.
+
+The A series (12 files)
+tests attributes
+required of all proxies, including ones that operate sequentially.  These include the
+ability to handle both text and binary files, to correctly handle
+exceptional cases, and to support sequences of transactions involving
+multiple servers.
+
+The B series (10 files)
+tests attributes
+required of
+a concurrent proxy.  These include cases where the reponses occur in a
+different order than the requests, and ones with many transactions,
+having the potential to cause race conditions.
+
+The C series (10 files)
+tests attributes
+required for a caching proxy.  These include the ability to cache text and binary
+files, as well as responses for nonexistent files.  It tests the
+cache policies on maximum file size, maximum total cache size, and
+eviction rules.  These tests require a concurrent
+proxy.
+
+Of course, even passing these 32 tests does not ensure complete correctness
+of a proxy program.  Errors involving incorrect synchronization are
+especially difficult to detect in any testing regime.
+
+\subsection*{Regression Testing with \pxyregress}
+
+The program \pxyregress{} automates the process of running a subset of
+the standard tests using \pxydrive{}.
+From its local directory, it is invoked as:
+\texttt{./pxyregress.py -p} {\it PROXY}, where {\it PROXY} is the path
+to the file
+containing the executable proxy program.  Command-line options include 
+\begin{description}
+\item[\texttt{-h}]  $\;$ \\
+Print usage information
+\item[\texttt{-s} {\it SERIES}] $\;$ \\
+Specify which series of tests to
+  perform.  By default, all three series (A, B, and C) are tested.  This argument
+  allows finer control, specified as a string consisting of some
+  combination of the characters
+  `\texttt{A}',   `\texttt{B}', and   `\texttt{C}'.  For example, the
+  command-line option \texttt{-s A} will run only the A-series tests.
+\item[\texttt{-t} {\it SECS}] $\;$ \\
+  Set a timeout limit of {\it SECS} seconds for each test.  Any test exceeding
+  that limit will be marked as having failed.  The default limit is
+  60 seconds.  Setting the limit to 0 indicates that the test should
+  be allowed to run indefinitely.
+\item[\texttt{-l} {\it FILE}]  $\;$ \\
+Copy program outputs to {\it FILE}\@.
+\item[\texttt{-S}]  $\;$ \\
+Enforce strict formatting rules for HTTP request message headers. 
+\end{description}
+
+\pxyregress{} stores the outputs generated by each of the tests in the
+\texttt{logs} subdirectory.
+
+\section{Additional Notes}
+\label{sec:notes}
+
+\begin{itemize}
+\item
+The results of \pxydrive{} (and therefore \pxyregress{}) are
+nondeterministic, due to the variable delays of network communications
+and proxy actions.  From one run to another, a test may pass one time
+and fail another.  When running one of the standard tests, such an
+inconsistency most likely indicates a synchronization error in the
+proxy, since the delays included in the regression tests should
+provide ample time for activities to take place.  Keep in mind that a
+correct proxy should pass all tests every time.  If tests succeed in
+some runs but fail in others, it is highly likely that the proxy is
+incorrect, and it is only by chance that the bugs are not always
+triggered.
+
+\item
+\pxydrive{} uses randomly generated port numbers for the proxy and the
+servers.  There is a small chance that its chosen numbers will
+conflict with ones already in use.   If this happens, try rerunning
+the program, so that it will select a new set of ports.
+
+
+\item
+\pxydrive{} is still in early stages
+of development.  It therefore has the potential to hang up when an
+error occurs, making it impossible to exit with the \texttt{quit}
+command or via Control-C\@.  If this occurs, you can kill the program by
+(in a separate window), using the \texttt{ps} command to determine the
+process number and the \texttt{kill} command to kill the process.
+
+\end{itemize}
+
+\end{document}
