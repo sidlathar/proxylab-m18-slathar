@@ -20,6 +20,9 @@ csapp.c
     Please use `port-for-user.pl' or 'free-port.sh' to generate
     unused ports for your proxy or tiny server. 
 
+doc
+    Documentation for Pxydrive testing framework
+
 Makefile
     This is the makefile that builds the proxy program.  Type "make"
     to build your solution, or "make clean" followed by "make" for a
@@ -44,6 +47,12 @@ driver.sh
 
 nop-server.py
      helper for the autograder.         
+
+src
+     Pxydrive testing framework
+
+tests
+     Test traces used by Pxydrive
 
 tiny
     Tiny Web server from the CS:APP text
