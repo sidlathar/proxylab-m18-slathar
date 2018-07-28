@@ -1,5 +1,0 @@
-Test /afs/andrew.cmu.edu/usr5/egoebel/private/15213TA/proxylab-handout/proxylab-handout/tests/A01-single-fetch.cmd failed: ERROR COUNT = 1
-Test /afs/andrew.cmu.edu/usr5/egoebel/private/15213TA/proxylab-handout/proxylab-handout/tests/A02-basic-text.cmd failed: ERROR COUNT = 1
-Test /afs/andrew.cmu.edu/usr5/egoebel/private/15213TA/proxylab-handout/proxylab-handout/tests/A03-basic-binary.cmd failed: ERROR COUNT = 1
-Test /afs/andrew.cmu.edu/usr5/egoebel/private/15213TA/proxylab-handout/proxylab-handout/tests/A04-missing-file.cmd failed: ERROR COUNT = 1
-Test /afs/andrew.cmu.edu/usr5/egoebel/private/15213TA/proxylab-handout/proxylab-handout/tests/A05-large-text.cmd failed: ERROR COUNT = 1
