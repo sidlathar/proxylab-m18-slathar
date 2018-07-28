@@ -1,0 +1,16 @@
+Test /afs/andrew.cmu.edu/usr5/egoebel/private/15213TA/proxylab-handout/proxylab-handout/tests/A01-single-fetch.cmd failed: File temp/proxy does not exist
+Test /afs/andrew.cmu.edu/usr5/egoebel/private/15213TA/proxylab-handout/proxylab-handout/tests/A02-basic-text.cmd failed: File temp/proxy does not exist
+Test /afs/andrew.cmu.edu/usr5/egoebel/private/15213TA/proxylab-handout/proxylab-handout/tests/A03-basic-binary.cmd failed: File temp/proxy does not exist
+Test /afs/andrew.cmu.edu/usr5/egoebel/private/15213TA/proxylab-handout/proxylab-handout/tests/A04-missing-file.cmd failed: File temp/proxy does not exist
+Test /afs/andrew.cmu.edu/usr5/egoebel/private/15213TA/proxylab-handout/proxylab-handout/tests/A05-large-text.cmd failed: File temp/proxy does not exist
+Test /afs/andrew.cmu.edu/usr5/egoebel/private/15213TA/proxylab-handout/proxylab-handout/tests/A06-large-binary.cmd failed: File temp/proxy does not exist
+Test /afs/andrew.cmu.edu/usr5/egoebel/private/15213TA/proxylab-handout/proxylab-handout/tests/A07-multiple-request.cmd failed: File temp/proxy does not exist
+Test /afs/andrew.cmu.edu/usr5/egoebel/private/15213TA/proxylab-handout/proxylab-handout/tests/A08-multiple-fetch.cmd failed: File temp/proxy does not exist
+Test /afs/andrew.cmu.edu/usr5/egoebel/private/15213TA/proxylab-handout/proxylab-handout/tests/A09-superfetch.cmd failed: File temp/proxy does not exist
+Test /afs/andrew.cmu.edu/usr5/egoebel/private/15213TA/proxylab-handout/proxylab-handout/tests/A10-fetch-request1.cmd failed: File temp/proxy does not exist
+Test /afs/andrew.cmu.edu/usr5/egoebel/private/15213TA/proxylab-handout/proxylab-handout/tests/A11-fetch-request2.cmd failed: File temp/proxy does not exist
+Test /afs/andrew.cmu.edu/usr5/egoebel/private/15213TA/proxylab-handout/proxylab-handout/tests/A12-fetch-request3.cmd failed: File temp/proxy does not exist
+Total run time = 0.00 seconds
+12 tests.  0 (0.0)% passed, 12 (100.0)% failed
+Runtime logs in directory ./logs
+ERROR COUNT = 12/12

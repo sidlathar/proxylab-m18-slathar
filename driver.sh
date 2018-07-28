@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
+
+#simple program to accompany Pxydrive. Used by autograder to grade submissions
+
 dir=$(pwd)
-MAX_BASIC=12
-MAX_CONCURRENCY=10
-MAX_CACHE=10
+MAX_BASIC=60
+MAX_CONCURRENCY=30
+MAX_CACHE=30
 BASIC_WEIGHT=5
 CONCURRENCY_WEIGHT=3
 CACHE_WEIGHT=3
@@ -11,9 +14,7 @@ if [ -d "temp" ]; then rm -r temp; fi
 mkdir temp
 cp proxy temp
 if [ $# -eq 0 ]; then
-  src/pxyregress.py -p temp/proxy -l results.log
-  #rm -r response_files
-  #rm -r source_files
+  src/pxyregress.py -p temp/proxy -t 40 -l results.log
   cd logs
   numPassed=0
   basicScore=0
@@ -51,10 +52,22 @@ elif [ $1 = "B" ]; then
   src/pxyregress.py -p temp/proxy -s B -l results.log
 elif [ $1 = "C" ]; then
   src/pxyregress.py -p temp/proxy -s C -l results.log
+elif [ $1 = "h" ]; then
+  echo "Run without arguments to run full Pxyregress test suite"
+  echo "Run with argument:"
+  echo "'A' to test basic proxy functionality"
+  echo "'B' to test concurrency"
+  echo "'C' to test cache functionality"
+  echo "<path to tracefile> to test a specific trace"
+elif [ $1 = "H" ]; then
+  echo "Run without arguments to run full Pxyregress test suite"
+  echo "Run with argument:"
+  echo "'A' to test basic proxy functionality"
+  echo "'B' to test concurrency"
+  echo "'C' to test cache functionality"
+  echo "<path to tracefile> to test a specific trace"
 else
   src/pxydrive.py -p temp/proxy -f $1
-  #rm -r response_files
-  #rm -r source_files
 fi
 rm -r temp
 exit
