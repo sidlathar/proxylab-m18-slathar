@@ -25,8 +25,9 @@ fetch f6 random-binary3.bin s2
 fetch f7 nothing.txt s1
 fetch f8 nothing.txt s2
 fetch f9 nothing.txt s3
+delay 200
 respond r1 r2 r3 r4 r5 r6 r7 r8 r9
-delay 300
+delay 200
 check r1
 check r2
 check r3
