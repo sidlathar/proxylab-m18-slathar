@@ -25,7 +25,7 @@ tiny-code:
 # Creates a tarball in ../proxylab-handin.tar that you should then
 # hand in to Autolab. DO NOT MODIFY THIS!
 handin:
-	(make clean; cd ..; tar cvf proxylab-handin.tar --exclude tiny --exclude nop-server.py --exclude proxy --exclude driver.sh --exclude port-for-user.pl --exclude free-port.sh --exclude ".*" --exclude src --exclude tests --exclude doc proxylab-m18*)
+	(make clean; cd ..; tar cvf proxylab-handin.tar --exclude tiny --exclude nop-server.py --exclude proxy --exclude driver.sh --exclude port-for-user.pl --exclude free-port.sh --exclude ".*" --exclude src --exclude tests --exclude doc --exclude logs --exclude response_files --exclude source_files proxylab-m18*)
 
 clean:
 	rm -f *~ *.o proxy core *.tar *.zip *.gzip *.bzip *.gz
